@@ -268,7 +268,7 @@ static long elan_iap_ioctl(/*struct inode *inode,*/ struct file *filp,    unsign
 		case IOCTL_MINOR_FW_VER:            
 			break;        
 		case IOCTL_RESET:
-			return elan_ktf3k_ts_hw_reset(private_ts->client, 0);
+			return elan_ktf3k_ts_hw_reset(private_ts->client, 250);
 		case IOCTL_IAP_MODE_LOCK:
 			work_lock=1;
 			disable_irq(private_ts->client->irq);
@@ -1331,7 +1331,7 @@ static int firmware_update_header(struct i2c_client *client, unsigned char *firm
     wake_lock(&ts->wakelock);
     work_lock = 1;
 	/*add delay for waiting bootcode initial*/
-	elan_ktf3k_ts_hw_reset(client, 20);
+	elan_ktf3k_ts_hw_reset(client, 250);
 	touch_debug(DEBUG_INFO, "Send command into IAP mode\n");
 	/*get into IAP mode*/
 	if (sendI2CPacket(client, nb_isp_cmd, sizeof(nb_isp_cmd)) < 0)
@@ -1377,7 +1377,7 @@ page_write_retry:
 	  cursor += FIRMWARE_PAGE_SIZE;
     }
 	
-    elan_ktf3k_ts_hw_reset(client, 0);
+    elan_ktf3k_ts_hw_reset(client, 250);
 
     /*check irq*/
     wait_for_IRQ_Low(client, 500000);/*500ms * 10*/
