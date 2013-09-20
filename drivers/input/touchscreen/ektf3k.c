@@ -142,6 +142,8 @@ struct elan_ktf3k_ts_data {
 	struct input_dev *input_dev;
 	struct workqueue_struct *elan_wq;
 	struct work_struct work;
+	struct workqueue_struct *touch_release_work_wq;
+	struct work_struct touch_release_work;
 	int (*power)(int on);
 	struct early_suspend early_suspend;
 	int intr_gpio;
@@ -1060,6 +1062,15 @@ static void process_resp_message(struct elan_ktf3k_ts_data *ts, const unsigned c
       }
 }
 
+static void touch_release_work_func(struct work_struct *work)
+{
+	struct elan_ktf3k_ts_data *ts = container_of(work, struct elan_ktf3k_ts_data, touch_release_work);
+	if (ts)
+		force_release_pos(ts->client);
+	else
+		touch_debug(DEBUG_INFO, "[elan] %s: ts == null, aborting touch release.\n", __func__);
+}
+
 static void elan_ktf3k_ts_work_func(struct work_struct *work)
 {
 	int rc;
@@ -1147,7 +1158,7 @@ static void elan_ktf3k_ts_work_func(struct work_struct *work)
 		    up(&pSem);	
 			if (((buf[0] == 0xFF) || (buf[0] == 0x7F) || (buf[0] == 0x55)) && (buf[1] == 0x55) && (buf[2] == 0x55) && (buf[3] == 0x55)) {
 				touch_debug(DEBUG_INFO, "[elan] GND issue detected, forcing touch release. {0x%02X, 0x%02X, 0x%02X, 0x%02X}\n", buf[0], buf[1], buf[2], buf[3]);
-				force_release_pos(ts->client);
+				queue_work(ts->touch_release_work_wq, &ts->touch_release_work);
 			} else {
 				touch_debug(DEBUG_INFO, "[elan] Get unknow packet {0x%02X, 0x%02X, 0x%02X, 0x%02X}\n", buf[0], buf[1], buf[2], buf[3]);
 			}
@@ -1514,6 +1525,16 @@ static int elan_ktf3k_ts_probe(struct i2c_client *client,
 	}
 
 	INIT_WORK(&ts->work, elan_ktf3k_ts_work_func);
+
+	ts->touch_release_work_wq = alloc_workqueue("pos_rel", WQ_UNBOUND | WQ_RESCUER | WQ_HIGHPRI, 1);
+	if (!ts->touch_release_work_wq) {
+		touch_debug(DEBUG_ERROR, "[elan] %s: create workqueue failed\n", __func__);
+		err = -ENOMEM;
+		goto err_create_wq_failed;
+	}
+
+	INIT_WORK(&ts->touch_release_work, touch_release_work_func);
+
 	ts->client = client;
 	i2c_set_clientdata(client, ts);
 	pdata = client->dev.platform_data;
@@ -1681,6 +1702,8 @@ static int elan_ktf3k_ts_remove(struct i2c_client *client)
 	unregister_early_suspend(&ts->early_suspend);
 	free_irq(client->irq, ts);
 
+	if (ts->touch_release_work_wq)
+		destroy_workqueue(ts->touch_release_work_wq);
 	if (ts->elan_wq)
 		destroy_workqueue(ts->elan_wq);
 	input_unregister_device(ts->input_dev);
