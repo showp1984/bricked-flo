@@ -1169,7 +1169,7 @@ static int elan_ktf3k_ts_register_interrupt(struct i2c_client *client)
 	struct elan_ktf3k_ts_data *ts = i2c_get_clientdata(client);
 	int err = 0;
 
-	err = request_irq(client->irq, elan_ktf3k_ts_irq_handler,
+	err = request_threaded_irq(client->irq, NULL, elan_ktf3k_ts_irq_handler,
 			IRQF_TRIGGER_LOW | IRQF_ONESHOT, client->name, ts);
 	if (err)
 		dev_err(&client->dev, "[elan] %s: request_irq %d failed\n",
