@@ -1502,7 +1502,7 @@ static int elan_ktf3k_ts_probe(struct i2c_client *client,
 		goto err_alloc_data_failed;
 	}
 
-	ts->elan_wq = create_singlethread_workqueue("elan_wq");
+	ts->elan_wq = alloc_workqueue("elan_wq", WQ_UNBOUND | WQ_RESCUER | WQ_HIGHPRI, 1);
 	if (!ts->elan_wq) {
 		touch_debug(DEBUG_ERROR, "[elan] %s: create workqueue failed\n", __func__);
 		err = -ENOMEM;
