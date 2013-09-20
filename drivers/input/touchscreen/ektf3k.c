@@ -169,6 +169,7 @@ static int __fw_packet_handler(struct i2c_client *client, int imediate);
 static int elan_ktf3k_ts_rough_calibrate(struct i2c_client *client);
 static int elan_ktf3k_ts_hw_reset(struct i2c_client *client, unsigned int time);
 static int elan_ktf3k_ts_resume(struct i2c_client *client);
+void force_release_pos(struct i2c_client *client);
 
 #ifdef FIRMWARE_UPDATE_WITH_HEADER
 static int firmware_update_header(struct i2c_client *client, unsigned char *firmware, unsigned int page_number);
@@ -843,7 +844,6 @@ static int elan_ktf3k_ts_hw_reset(struct i2c_client *client, unsigned int time)
 	return 0;
 }
 
-
 static int elan_ktf3k_ts_set_power_source(struct i2c_client *client, u8 state)
 {
 	uint8_t cmd[] = {CMD_W_PKT, 0x40, 0x00, 0x01};
@@ -1145,7 +1145,12 @@ static void elan_ktf3k_ts_work_func(struct work_struct *work)
 		    break;
 		default:
 		    up(&pSem);	
-		    touch_debug(DEBUG_INFO, "[elan] Get unknow packet {0x%02X, 0x%02X, 0x%02X, 0x%02X}\n", buf[0], buf[1], buf[2], buf[3]);
+			if ((buf[0] == 0xFF) && (buf[1] == 0x55) && (buf[2] == 0x55) && (buf[3] == 0x55)) {
+				touch_debug(DEBUG_INFO, "[elan] GND issue detected, forcing touch release. {0x%02X, 0x%02X, 0x%02X, 0x%02X}\n", buf[0], buf[1], buf[2], buf[3]);
+				force_release_pos(ts->client);
+			} else {
+				touch_debug(DEBUG_INFO, "[elan] Get unknow packet {0x%02X, 0x%02X, 0x%02X, 0x%02X}\n", buf[0], buf[1], buf[2], buf[3]);
+			}
 	       }		 
 #endif
 		enable_irq(ts->client->irq);
