@@ -1342,7 +1342,7 @@ static int firmware_update_header(struct i2c_client *client, unsigned char *firm
     wake_lock(&ts->wakelock);
     work_lock = 1;
 	/*add delay for waiting bootcode initial*/
-	elan_ktf3k_ts_hw_reset(client, 250);
+	elan_ktf3k_ts_hw_reset(client, 20);
 	touch_debug(DEBUG_INFO, "Send command into IAP mode\n");
 	/*get into IAP mode*/
 	if (sendI2CPacket(client, nb_isp_cmd, sizeof(nb_isp_cmd)) < 0)
