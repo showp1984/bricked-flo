@@ -1173,7 +1173,11 @@ static int elan_ktf3k_ts_register_interrupt(struct i2c_client *client)
 	int err = 0;
 
 	err = request_threaded_irq(client->irq, NULL, elan_ktf3k_ts_irq_handler,
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+			IRQF_TRIGGER_LOW | IRQF_ONESHOT | IRQF_NO_SUSPEND, client->name, ts);
+#else
 			IRQF_TRIGGER_LOW | IRQF_ONESHOT, client->name, ts);
+#endif
 	if (err)
 		dev_err(&client->dev, "[elan] %s: request_irq %d failed\n",
 				__func__, client->irq);
