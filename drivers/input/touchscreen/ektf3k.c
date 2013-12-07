@@ -554,7 +554,6 @@ static int elan_ktf3k_ts_get_data(struct i2c_client *client, uint8_t *cmd,
 static int elan_ktf3k_ts_read_command(struct i2c_client *client,
 			   u8* cmd, u16 cmd_length, u8 *value, u16 value_length){
 	struct i2c_msg msg[1];
-	//__le16 le_addr;
 	int retry = 0;
 
 	msg[0].addr = client->addr;
@@ -580,7 +579,6 @@ static int elan_ktf3k_ts_read_command(struct i2c_client *client,
 static int elan_ktf3k_i2c_read_packet(struct i2c_client *client, 
 	u8 *value, u16 value_length){
 	struct i2c_msg msg[1];
-	//__le16 le_addr;
 	int retry = 0;
 
 	msg[0].addr = client->addr;
