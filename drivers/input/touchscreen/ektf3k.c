@@ -71,6 +71,15 @@
 
 #include <linux/i2c/ektf3k.h>
 
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#ifdef CONFIG_TOUCHSCREEN_SWEEP2WAKE
+#include <linux/input/sweep2wake.h>
+#endif
+#ifdef CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE
+#include <linux/input/doubletap2wake.h>
+#endif
+#endif
+
 // For Firmware Update 
 #define ELAN_IOCTLID	0xD0
 #define IOCTL_I2C_SLAVE	_IOW(ELAN_IOCTLID,  1, int)
@@ -1712,17 +1721,34 @@ static int elan_ktf3k_ts_suspend(struct i2c_client *client, pm_message_t mesg)
 {
 	struct elan_ktf3k_ts_data *ts = i2c_get_clientdata(client);
 	int rc = 0;
-
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	bool prevent_sleep = false;
+#endif
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE)
+	prevent_sleep = (s2w_switch > 0) && (s2w_s2sonly == 0);
+#endif
+#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
+#endif
+#endif
 	touch_debug(DEBUG_INFO, "[elan] %s: enter\n", __func__);
-	disable_irq(client->irq);
-	force_release_pos(client);
-	rc = cancel_work_sync(&ts->work);
-	if (rc)
-		enable_irq(client->irq);
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	if (prevent_sleep) {
+		enable_irq_wake(ts->client->irq);
+		force_release_pos(client);
+	} else
+#endif
+	{
+		disable_irq(client->irq);
+		force_release_pos(client);
+		rc = cancel_work_sync(&ts->work);
+		if (rc)
+			enable_irq(client->irq);
 
-	if(work_lock == 0)
-	    rc = elan_ktf3k_ts_set_power_state(client, PWR_STATE_DEEP_SLEEP);
-
+		if(work_lock == 0)
+		    rc = elan_ktf3k_ts_set_power_state(client, PWR_STATE_DEEP_SLEEP);
+	}
 	return 0;
 }
 
@@ -1730,25 +1756,44 @@ static int elan_ktf3k_ts_resume(struct i2c_client *client)
 {
 
 	int rc = 0, retry = 5;
-      //struct elan_ktf3k_ts_data *ts = i2c_get_clientdata(client);
+	struct elan_ktf3k_ts_data *ts = i2c_get_clientdata(client);
       //int delay_time;
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE) || defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	bool prevent_sleep = false;
+#endif
+#if defined(CONFIG_TOUCHSCREEN_SWEEP2WAKE)
+	prevent_sleep = (s2w_switch > 0) && (s2w_s2sonly == 0);
+#endif
+#if defined(CONFIG_TOUCHSCREEN_DOUBLETAP2WAKE)
+	prevent_sleep = prevent_sleep || (dt2w_switch > 0);
+#endif
+#endif
 
 	//gpio_direction_output(31, 0);
 	  
 	touch_debug(DEBUG_INFO, "[elan] %s: enter\n", __func__);
-	if(work_lock == 0){
-	    do {
-		rc = elan_ktf3k_ts_set_power_state(client, PWR_STATE_NORMAL);
-		rc = elan_ktf3k_ts_get_power_state(client);
-		if (rc != PWR_NORMAL_STATE && rc != PWR_IDLE_STATE)
-			touch_debug(DEBUG_ERROR,  "[elan] %s: wake up tp failed! err = %d\n",
-				__func__, rc);
-		else
-			break;
-	    } while (--retry);
+#ifdef CONFIG_TOUCHSCREEN_PREVENT_SLEEP
+	if (prevent_sleep) {
+		disable_irq_wake(ts->client->irq);
+		force_release_pos(client);
+	} else
+#endif
+	{
+		if(work_lock == 0){
+		    do {
+			rc = elan_ktf3k_ts_set_power_state(client, PWR_STATE_NORMAL);
+			rc = elan_ktf3k_ts_get_power_state(client);
+			if (rc != PWR_NORMAL_STATE && rc != PWR_IDLE_STATE)
+				touch_debug(DEBUG_ERROR,  "[elan] %s: wake up tp failed! err = %d\n",
+					__func__, rc);
+			else
+				break;
+		    } while (--retry);
+		}
+		//force_release_pos(client);
+	      enable_irq(client->irq);	
 	}
-	//force_release_pos(client);
-      enable_irq(client->irq);	
 	return 0;
 }
 
