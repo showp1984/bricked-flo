@@ -467,39 +467,6 @@ static struct attribute *elan_attr[] = {
 	NULL
 };
 
-static struct kobject *android_touch_kobj;
-
-/*
-static int elan_ktf3k_touch_sysfs_init(void)
-{
-	int ret ;
-
-	android_touch_kobj = kobject_create_and_add("android_touch", NULL) ;
-	if (android_touch_kobj == NULL) {
-		touch_debug(DEBUG_ERROR, "[elan]%s: subsystem_register failed\n", __func__);
-		ret = -ENOMEM;
-		return ret;
-	}
-	ret = sysfs_create_file(android_touch_kobj, &dev_attr_gpio.attr);
-	if (ret) {
-		touch_debug(DEBUG_ERROR, "[elan]%s: sysfs_create_file failed\n", __func__);
-		return ret;
-	}
-	ret = sysfs_create_file(android_touch_kobj, &dev_attr_vendor.attr);
-	if (ret) {
-		touch_debug(DEBUG_ERROR, "[elan]%s: sysfs_create_group failed\n", __func__);
-		return ret;
-	}
-	return 0 ;
-}
-*/
-static void elan_touch_sysfs_deinit(void)
-{
-	sysfs_remove_file(android_touch_kobj, &dev_attr_vendor.attr);
-	sysfs_remove_file(android_touch_kobj, &dev_attr_gpio.attr);
-	kobject_del(android_touch_kobj);
-}
-
 static int __elan_ktf3k_ts_poll(struct i2c_client *client)
 {
 	struct elan_ktf3k_ts_data *ts = i2c_get_clientdata(client);
@@ -1625,7 +1592,6 @@ static int elan_ktf3k_ts_probe(struct i2c_client *client,
 
 	private_ts = ts;
 
-	//elan_ktf2k_touch_sysfs_init();
       ts->attrs.attrs = elan_attr;
 	err = sysfs_create_group(&client->dev.kobj, &ts->attrs);
 	if (err) {
@@ -1708,8 +1674,6 @@ err_check_functionality_failed:
 static int elan_ktf3k_ts_remove(struct i2c_client *client)
 {
 	struct elan_ktf3k_ts_data *ts = i2c_get_clientdata(client);
-
-	elan_touch_sysfs_deinit();
 
 	unregister_early_suspend(&ts->early_suspend);
 	free_irq(client->irq, ts);
