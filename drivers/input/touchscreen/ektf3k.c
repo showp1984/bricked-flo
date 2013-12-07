@@ -469,6 +469,7 @@ static struct attribute *elan_attr[] = {
 
 static struct kobject *android_touch_kobj;
 
+/*
 static int elan_ktf3k_touch_sysfs_init(void)
 {
 	int ret ;
@@ -491,7 +492,7 @@ static int elan_ktf3k_touch_sysfs_init(void)
 	}
 	return 0 ;
 }
-
+*/
 static void elan_touch_sysfs_deinit(void)
 {
 	sysfs_remove_file(android_touch_kobj, &dev_attr_vendor.attr);
@@ -1624,7 +1625,7 @@ static int elan_ktf3k_ts_probe(struct i2c_client *client,
 
 	private_ts = ts;
 
-	elan_ktf3k_touch_sysfs_init();
+	//elan_ktf2k_touch_sysfs_init();
       ts->attrs.attrs = elan_attr;
 	err = sysfs_create_group(&client->dev.kobj, &ts->attrs);
 	if (err) {
@@ -1726,7 +1727,6 @@ static int elan_ktf3k_ts_remove(struct i2c_client *client)
 #ifdef _ENABLE_DBG_LEVEL
 	remove_proc_entry(PROC_FS_NAME, NULL);
 #endif
-	elan_touch_sysfs_deinit();
 	return 0;
 }
 
