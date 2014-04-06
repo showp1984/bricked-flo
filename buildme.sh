@@ -16,7 +16,7 @@ PREBUILT="$(pwd)/prebuilt"
 OUT_DIR="$(pwd)/out"
 #compile neccesities
 USERCCDIR="$HOME/.ccache"
-CODENAME="mako"
+CODENAME="flo"
 DEFCONFIG="bricked_defconfig"
 NRJOBS=$(( $(nproc) * 2 ))
 #ftpstuff
