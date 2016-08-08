@@ -2745,7 +2745,7 @@ int iw_get_softap_linkspeed(struct net_device *dev,
    char *pLinkSpeed = (char*)extra;
    char *pmacAddress;
    v_U32_t link_speed;
-   unsigned short staId;
+   unsigned short staId = 0;
    int len = sizeof(v_U32_t)+1;
    v_BYTE_t macAddress[VOS_MAC_ADDR_SIZE];
    VOS_STATUS status;
