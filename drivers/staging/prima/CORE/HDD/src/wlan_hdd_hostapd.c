@@ -2194,7 +2194,7 @@ static int iw_softap_setwpsie(struct net_device *dev,
    hdd_hostapd_state_t *pHostapdState;
    eHalStatus halStatus= eHAL_STATUS_SUCCESS;
    u_int8_t *wps_genie;
-   u_int8_t *fwps_genie;
+   u_int8_t *fwps_genie = NULL;
    u_int8_t *pos;
    tpSap_WPSIE pSap_WPSIe;
    u_int8_t WPSIeType;
